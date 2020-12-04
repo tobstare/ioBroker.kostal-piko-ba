@@ -7,66 +7,75 @@ const utils = require('@iobroker/adapter-core');
 // const schedule = require('node-schedule');
 const adapterIntervals = {};
 
-// Leistungswerte
-const ID_Power_SolarDC                = 33556736;  // in W  -  DC Power PV
-const ID_Power_GridAC                 = 67109120;  // in W  -  GridOutputPower without battery charging
-// State
-const ID_OperatingState               = 16780032;  // 0:Off; 3:Einspeissen(MPP)
-// Statistics - Daily
+// live values power output
+const ID_Power_GridAC                 = 67109120;  // in W  -  GridOutputPower excluding power for battery charging
+// state
+const ID_OperatingState               = 16780032;  // 0 = aus; 1 = Leerlauf(?); 2 = Anfahren, DC Spannung noch zu klein(?)
+                                                   // 3 = Einspeisen(MPP); 4 = Einspeisen(abgeregelt)
+// statistics - daily
 const ID_StatDay_Yield                = 251658754; // in Wh
 const ID_StatDay_HouseConsumption     = 251659010; // in Wh
 const ID_StatDay_SelfConsumption      = 251659266; // in Wh
 const ID_StatDay_SelfConsumptionRate  = 251659278; // in %
 const ID_StatDay_Autarky              = 251659279; // in %
-// Statistics - Total
+// statistics - total
 const ID_StatTot_OperatingTime        = 251658496; // in h
 const ID_StatTot_Yield                = 251658753; // in kWh
 const ID_StatTot_HouseConsumption     = 251659009; // in kWh
 const ID_StatTot_SelfConsumption      = 251659265; // in kWh
 const ID_StatTot_SelfConsumptionRate  = 251659280; // in %
 const ID_StatTot_Autarky              = 251659281; // in %
-// Momentanwerte - PV Generator
-const ID_Power_DC1Current             = 33555201;  // in A
-const ID_Power_DC1Voltage             = 33555202;  // in V
-const ID_Power_DC1Power               = 33555203;  // in W
-const ID_Power_DC2Current             = 33555457;  // in A
-const ID_Power_DC2Voltage             = 33555458;  // in V
-const ID_Power_DC2Power               = 33555459;  // in W
-const ID_Power_DC3Current             = 33555713;  // in A
-const ID_Power_DC3Voltage             = 33555714;  // in V
-const ID_Power_DC3Power               = 33555715;  // in W
-// Momentanwerte Haus
+// live values - PV generator power
+const ID_Power_SolarDC                = 33556736;  // in W  -  DC Power PV generator in total
+const ID_Power_DC1Current             = 33555201;  // in A  -  DC current line 1
+const ID_Power_DC1Voltage             = 33555202;  // in V  -  DC voltage line 1
+const ID_Power_DC1Power               = 33555203;  // in W  -  DC power line 1 
+const ID_Power_DC2Current             = 33555457;  // in A  -  DC current line 2
+const ID_Power_DC2Voltage             = 33555458;  // in V  -  DC voltage line 2
+const ID_Power_DC2Power               = 33555459;  // in W  -  DC power line 2
+const ID_Power_DC3Current             = 33555713;  // in A  -  DC current line 3 (equals to battery current in case of Pico BA)
+const ID_Power_DC3Voltage             = 33555714;  // in V  -  DC voltage line 3 (equals to battery voltage in case of Pico BA)
+const ID_Power_DC3Power               = 33555715;  // in W  -  DC power line 3 (equals to battery power in case of Pico BA)
+// live values - home
 const ID_Power_HouseConsumptionSolar  = 83886336;  // in W  -  ActHomeConsumptionSolar - not implemented
 const ID_Power_HouseConsumptionBat    = 83886592;  // in W  -  ActHomeConsumptionBat - not implemented
 const ID_Power_HouseConsumptionGrid   = 83886848;  // in W  -  ActHomeConsumptionGrid - not implemented
 const ID_Power_HouseConsumptionPhase1 = 83887106;  // in W  -  ActHomeConsumptionPhase1 - not implemented
 const ID_Power_HouseConsumptionPhase2 = 83887362;  // in W  -  ActHomeConsumptionPhase2 - not implemented
 const ID_Power_HouseConsumptionPhase3 = 83887618;  // in W  -  ActHomeConsumptionPhase3 - not implemented
-const ID_Power_HouseConsumption       = 83887872;  // in W  -  ActHomeConsumption
-const ID_Power_SelfConsumption        = 83888128;  // in W  -  ownConsumption
-// grid parameter
+const ID_Power_HouseConsumption       = 83887872;  // in W  -  Consumption of your home, measured by PIKO sensor
+const ID_Power_SelfConsumption        = 83888128;  // in W  -  SelfConsumption
+// live values - grid parameter
 const ID_GridLimitation               = 67110144;  // in %   -  GridLimitation
 const ID_GridFrequency                = 67110400;  // in Hz  -  GridFrequency - not implemented
 const ID_GridCosPhi                   = 67110656;  //        -  GridCosPhi - not implemented
-// grid phase 1
+// live values - grid phase 1
 const ID_L1GridCurrent                = 67109377;  // in A  -  not implemented
 const ID_L1GridVoltage                = 67109378;  // in V  -  not implemented
 const ID_L1GridPower                  = 67109379;  // in W  -  not implemented
-// grid phase 2
+// live values - grid phase 2
 const ID_L2GridCurrent                = 67109633;  // in A  -  not implemented
 const ID_L2GridVoltage                = 67109634;  // in V  -  not implemented
 const ID_L2GridPower                  = 67109635;  // in W  -  not implemented
-// grid phase 3
+// live values - grid phase 3
 const ID_L3GridCurrent                = 67109889;  // in A  -  not implemented
 const ID_L3GridVoltage                = 67109890;  // in V  -  not implemented
 const ID_L3GridPower                  = 67109891;  // in W  -  not implemented
-// Battery
-const ID_BatVoltage                   = 33556226;  // in V  -  not implemented
+// live values - Battery
+const ID_BatVoltage                   = 33556226;  // in V
 const ID_BatTemperature               = 33556227;  // in °C
 const ID_BatChargeCycles              = 33556228;  // in 1  -  not implemented
 const ID_BatStateOfCharge             = 33556229;  // in %
 const ID_BatCurrentDir                = 33556230;  // 1 = discharge; 0 = charge
 const ID_BatCurrent                   = 33556238;  // in A
+// live values - inputs
+const ID_InputAnalog1                 = 167772417; // in V  -  not implemented
+const ID_InputAnalog2                 = 167772673; // in V  -  not implemented
+const ID_InputAnalog3                 = 167772929; // in V  -  not implemented
+const ID_InputAnalog4                 = 167773185; // in V  -  not implemented
+const ID_Input_S0_count               = 184549632; // in 1  -  not implemented
+const ID_Input_S0_seconds             = 150995968; // in sec  -  not implemented
+
 
 var KostalRequest      = ''; // IP request-string for PicoBA current data
 var KostalRequestDay   = ''; // IP request-string for PicoBA daily statistics
@@ -117,9 +126,7 @@ class KostalPikoBA extends utils.Adapter {
         }
         this.log.info(`Polltime alltime statistics set to: ${(this.config.polltimetotal / 1000)} seconds`);
 
-
         //sentry.io ping
-        /*
         if (this.supportsFeature && this.supportsFeature('PLUGINS')) {
             const sentryInstance = this.getPluginInstance('sentry');
             if (sentryInstance) {
@@ -131,22 +138,21 @@ class KostalPikoBA extends utils.Adapter {
                 });
             }
         }
-        */
+        
 
         // this.subscribeStates('*'); // all states changes inside the adapters namespace are subscribed
 
         if (this.config.ipaddress) {
-
             KostalRequest = `http://${this.config.ipaddress}/api/dxs.json`
                 + `?dxsEntries=${ID_Power_SolarDC        }&dxsEntries=${ID_Power_GridAC          }`
-				+ `&dxsEntries=${ID_Power_DC1Power       }&dxsEntries=${ID_Power_DC1Current      }`
-				+ `&dxsEntries=${ID_Power_DC1Voltage     }&dxsEntries=${ID_Power_DC2Power        }`
-				+ `&dxsEntries=${ID_Power_DC2Current     }&dxsEntries=${ID_Power_DC2Voltage      }`
-				+ `&dxsEntries=${ID_Power_DC3Power       }&dxsEntries=${ID_Power_DC3Current      }`
-				+ `&dxsEntries=${ID_Power_DC3Voltage     }`            
+                + `&dxsEntries=${ID_Power_DC1Power       }&dxsEntries=${ID_Power_DC1Current      }`
+                + `&dxsEntries=${ID_Power_DC1Voltage     }&dxsEntries=${ID_Power_DC2Power        }`
+                + `&dxsEntries=${ID_Power_DC2Current     }&dxsEntries=${ID_Power_DC2Voltage      }`
+                + `&dxsEntries=${ID_Power_DC3Power       }&dxsEntries=${ID_Power_DC3Current      }`
+                + `&dxsEntries=${ID_Power_DC3Voltage     }`            
                 + `&dxsEntries=${ID_Power_SelfConsumption}&dxsEntries=${ID_Power_HouseConsumption}`
-                + `&dxsEntries=${ID_OperatingState       }&dxsEntries=${ID_BatTemperature        }`
-                + `&dxsEntries=${ID_BatStateOfCharge     }`
+                + `&dxsEntries=${ID_OperatingState       }&dxsEntries=${ID_BatVoltage}`
+                + `&dxsEntries=${ID_BatTemperature       }&dxsEntries=${ID_BatStateOfCharge      }`
                 + `&dxsEntries=${ID_BatCurrent           }&dxsEntries=${ID_BatCurrentDir         }`
                 + `&dxsEntries=${ID_GridLimitation       }`;
 
@@ -199,7 +205,7 @@ class KostalPikoBA extends utils.Adapter {
         } catch (e) {
             this.log.error(`Error in setting adapter schedule: ${e}`);
             this.restart;
-        }
+        } // END try catch
     }
     
 
@@ -215,29 +221,30 @@ class KostalPikoBA extends utils.Adapter {
                 if (!response.error && response.statusCode == 200) {
                     var result = await JSON.parse(response.body).dxsEntries;
                     this.setStateAsync('Power.SolarDC', { val: Math.round(result[0].value), ack: true });
-					this.setStateAsync('Power.GridAC', { val: Math.round(result[1].value), ack: true });
-					this.setStateAsync('Power.DC1Power', { val: Math.round(result[2].value), ack: true });
-					this.setStateAsync('Power.DC1Current', { val: Math.round(result[3].value), ack: true });
-					this.setStateAsync('Power.DC1Voltage', { val: Math.round(result[4].value), ack: true });
-					this.setStateAsync('Power.DC2Power', { val: Math.round(result[5].value), ack: true });
-					this.setStateAsync('Power.DC2Current', { val: Math.round(result[6].value), ack: true });
-					this.setStateAsync('Power.DC2Voltage', { val: Math.round(result[7].value), ack: true });
-					this.setStateAsync('Power.DC3Power', { val: Math.round(result[8].value), ack: true });
-					this.setStateAsync('Power.DC3Current', { val: Math.round(result[9].value), ack: true });
-					this.setStateAsync('Power.DC3Voltage', { val: Math.round(result[10].value), ack: true });
+                    this.setStateAsync('Power.GridAC', { val: Math.round(result[1].value), ack: true });
+                    this.setStateAsync('Power.DC1Power', { val: Math.round(result[2].value), ack: true });
+                    this.setStateAsync('Power.DC1Current', { val: (Math.round(1000 * result[3].value)) / 1000, ack: true });
+                    this.setStateAsync('Power.DC1Voltage', { val: Math.round(result[4].value), ack: true });
+                    this.setStateAsync('Power.DC2Power', { val: Math.round(result[5].value), ack: true });
+                    this.setStateAsync('Power.DC2Current', { val: (Math.round(1000 * result[6].value)) / 1000, ack: true });
+                    this.setStateAsync('Power.DC2Voltage', { val: Math.round(result[7].value), ack: true });
+                    this.setStateAsync('Power.DC3Power', { val: Math.round(result[8].value), ack: true });
+                    this.setStateAsync('Power.DC3Current', { val: (Math.round(1000 * result[9].value)) / 1000, ack: true });
+                    this.setStateAsync('Power.DC3Voltage', { val: Math.round(result[10].value), ack: true });
                     this.setStateAsync('Power.SelfConsumption', { val: Math.round(result[11].value), ack: true });
                     this.setStateAsync('Power.HouseConsumption', { val: Math.floor(result[12].value), ack: true });
                     this.setStateAsync('State', { val: result[13].value, ack: true });
-                    this.setStateAsync('Battery.Temperature', { val: result[14].value, ack: true });
-                    this.setStateAsync('Battery.SoC', { val: result[15].value, ack: true });
-                    if (result[17].value) { // result[8] = 'Battery current direction; 1=Load; 0=Unload'
-                        this.setStateAsync('Battery.Current', { val: result[16].value, ack: true});
+                    this.setStateAsync('Battery.Voltage', { val: Math.round(result[14].value), ack: true });
+                    this.setStateAsync('Battery.Temperature', { val: result[15].value, ack: true });
+                    this.setStateAsync('Battery.SoC', { val: result[16].value, ack: true });
+                    if (result[18].value) { // result[8] = 'Battery current direction; 1=Load; 0=Unload'
+                        this.setStateAsync('Battery.Current', { val: result[17].value, ack: true});
                     }
                     else { // discharge
-                        this.setStateAsync('Battery.Current', { val: result[16].value * -1, ack: true});
+                        this.setStateAsync('Battery.Current', { val: result[17].value * -1, ack: true});
                     }
                     this.setStateAsync('Power.Surplus', { val: Math.round(result[1].value - result[11].value), ack: true });
-                    this.setStateAsync('GridLimitation', { val: result[18].value, ack: true });
+                    this.setStateAsync('GridLimitation', { val: result[19].value, ack: true });
                     this.log.debug('Piko-BA live data updated');
                 }
                 else {
@@ -275,8 +282,14 @@ class KostalPikoBA extends utils.Adapter {
                 this.log.error(`Error in calling Piko API: ${e}`);
                 this.log.error(`Please verify IP address: ${this.config.ipaddress} !!!`);
             } // END try catch
-            clearTimeout(adapterIntervals.daily);
-            adapterIntervals.daily = setTimeout(this.ReadPikoDaily.bind(this), this.config.polltimedaily);
+
+            try {
+                clearTimeout(adapterIntervals.daily);
+                adapterIntervals.daily = setTimeout(this.ReadPikoDaily.bind(this), this.config.polltimedaily);
+            } catch (e) {
+                this.log.error(`Error in setting adapter schedule: ${e}`);
+            } // END try catch
+
         })();
     } // END ReadPikoDaily
 
@@ -308,8 +321,14 @@ class KostalPikoBA extends utils.Adapter {
                 this.log.error(`Please verify IP address: ${this.config.ipaddress} !!!`);
             } // END try catch
         })();
-        clearTimeout(adapterIntervals.total);
-        adapterIntervals.total = setTimeout(this.ReadPikoTotal.bind(this), this.config.polltimetotal);
+
+        try {
+            clearTimeout(adapterIntervals.total);
+            adapterIntervals.total = setTimeout(this.ReadPikoTotal.bind(this), this.config.polltimetotal);
+        } catch (e) {
+            this.log.error(`Error in setting adapter schedule: ${e}`);
+        } // END try catch
+
     } // END ReadPikoTotal
 
 } // END Class
